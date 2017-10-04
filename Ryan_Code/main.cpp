@@ -1,11 +1,12 @@
 
 #include <iostream>
-#include <string>
 
 using namespace std;
 
 bool subtract(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len);
+bool determineValidity(bool isNegative, int numerator, int len);
 void testConditions(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len);
+void longDivision(int numerator, int denominator, int current_char, char result[], int len);
 
 int main() {
 
@@ -55,9 +56,19 @@ bool subtract(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int
 	//normalizing the numerators and denominators means putting them on the same denominator scale via cross multiplication
 	int normalized_n1 = n1 * d2;
 	int normalized_n2 = n2 * d1;
+
 	int normalized_denominator = d1 * d2;
 
-	//Combine the numerators with the whole numbers. This is done safely by multiplying the whole numbers by the new denominator
+	//overflow has occurred or one of the numbers is negative -> this is an improper result
+	if (normalized_n1 < 0
+		|| normalized_n2 < 0
+		|| normalized_denominator < 0) {
+		validResult = false;
+		return validResult;
+	}
+
+	//Combine the numerators with the whole numbers. This is done by multiplying the whole numbers by the new denominator
+	//risk of overflow in the second statements
 	int full_n1 = normalized_n1 + (normalized_denominator * c1);
 	int full_n2 = normalized_n2 + (normalized_denominator * c2);
 
@@ -73,31 +84,10 @@ bool subtract(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int
 	}
 
 	//the final characteristic value is evaluated by determining how many parts of the final numerator fit in the normalized denominator
-	int final_characteristic = 0;
-	for (; final_numerator >= normalized_denominator; final_numerator -= normalized_denominator) {
-		final_characteristic++;
-	}
+	int final_characteristic = final_numerator / normalized_denominator;
+	final_numerator = final_numerator % normalized_denominator;
 
-	//if you cannot add at least one integer and the null terminating character, do not proceed
-	if (len < 2) {
-		validResult = false;
-	}
-
-	//If our result is negative it must include the '-' character
-	//if there isn't enough room for the '-', at least one number, and the null terminator, we know this will be an invalid result
-	if (isNegativeResult && len < 3) {
-		validResult = false;
-	}
-
-	//if there isn't enough room for the '.', at least one number, and the null terminator, we know this will be an invalid result
-	if (final_numerator > 0 && len < 4) {
-		validResult = false;
-	}
-
-	//if there isn't enough room for the '-', '.', at least one number, and the null terminator, we know this will be an invalid result
-	if (isNegativeResult && final_numerator > 0 && len < 5) {
-		validResult = false;
-	}
+	validResult = determineValidity(isNegativeResult, final_numerator, len);
 
 	if (validResult) {
 		//add the null terminating character
@@ -129,7 +119,7 @@ bool subtract(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int
 			final_characteristic /= 10;
 		}
 
-		//the final digit
+		//the final digit, not caught by the loop above
 		temp_char_array[num_characteristic_digits++] = char(final_characteristic + '0');
 
 		//is there enough room to display all characters of the characteristic AND additional characters that are included?
@@ -145,59 +135,91 @@ bool subtract(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int
 				current_char++;
 			}
 
-			//the last result of a long division subtraction operation below
-			int last_result = final_numerator;
-			//a temporary variable used to keep track of the long division "multiplier" on a base number
-			int temp_multiple;
-
-			//TODO make sure there is room for the decimal point
-			if (last_result > 0) {
-				result[current_char++] = '.';
-			}
-
-			bool addZeroes = false;
-
-			//Long Division to determine the decimal representation of the fraction
-			for (; current_char < len - 1; last_result *= 10) {
-				//if the numbers have evenly divided
-				if (last_result == 0) {
-					result[current_char + 1] = '\0';
-					break;
-				}
-
-				//if the last result is more than the normalized denominator we can do some operations on it to evaluate the decimal value
-				if (last_result >= normalized_denominator) {
-					temp_multiple = 0;
-					while (((temp_multiple + 1) * normalized_denominator) < last_result) {
-						temp_multiple++;
-					}
-					result[current_char++] = char(temp_multiple + '0');
-					last_result = last_result - (temp_multiple * normalized_denominator);
-				}
-				//add a zero otherwise, to signify that the digit is smaller
-				else {
-					if (addZeroes) {
-						result[current_char++] = '0';
-					}
-					else {
-						addZeroes = true;
-					}
-				}
-			}
+			longDivision(final_numerator, normalized_denominator, current_char, result, len);
 		}
 	}
 
 	return validResult;
 }
 
+//determine if the given data translates to a valid result using checks on the length and what we know about the product
+bool determineValidity(bool isNegative, int numerator, int length) {
+
+	bool isValid = true;
+
+	//if you cannot add at least one integer and the null terminating character, do not proceed
+	if (length < 2) {
+		isValid = false;
+	}
+
+	//If our result is negative it must include the '-' character
+	//if there isn't enough room for the '-', at least one number, and the null terminator, we know this will be an invalid result
+	else if (isNegative && length < 3) {
+		isValid = false;
+	}
+
+	//if there isn't enough room for the '.', at least one number, and the null terminator, we know this will be an invalid result
+	else if (numerator > 0 && length < 4) {
+		isValid = false;
+	}
+
+	//if there isn't enough room for the '-', '.', at least one number, and the null terminator, we know this will be an invalid result
+	else if (isNegative && numerator > 0 && length < 5) {
+		isValid = false;
+	}
+
+	return isValid;
+}
+
 void testConditions(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len) {
 
 	if (subtract(c1, n1, d1, c2, n2, d2, result, len)) {
-		cout << "The result of the subtraction is about " << string(result) << endl;
+		cout << "The result of the subtraction is about " << result << endl;
 	}
 	else {
 		cout << "Not enough space was made for the result of the subtraction" << endl;
 	}
 }
 
-//TODO do we check to make sure the characteristic fits?
+//long division is used to determine how the final fraction translates into decimals
+void longDivision(int numerator, int denominator, int current_char, char result[], int len) {
+	//when doing the long division below, it is important to store the previous result of the operation
+	int previous_result = numerator;
+
+	//the next digit that will go in the char array, rendered using long division
+	int next_digit;
+
+	if (previous_result > 0) {
+		result[current_char++] = '.';
+	}
+
+	bool addZeroes = false;
+
+	//Long Division to determine the decimal representation of the fraction
+	for (; current_char < len - 1; previous_result *= 10) {
+		//if the numbers have evenly divided
+		if (previous_result == 0) {
+			result[current_char + 1] = '\0';
+			break;
+		}
+
+		//if the last result is more than the normalized denominator we can do some operations on it to evaluate the decimal value
+		if (previous_result >= denominator) {
+			next_digit = 0;
+			while (((next_digit + 1) * denominator) < previous_result) {
+				next_digit++;
+			}
+			result[current_char++] = char(next_digit + '0');
+			previous_result = previous_result - (next_digit * denominator);
+		}
+		//add a zero otherwise, to signify that the digit is smaller
+		else {
+			if (addZeroes) {
+				result[current_char++] = '0';
+			}
+			else {
+				addZeroes = true;
+			}
+		}
+	}
+}
