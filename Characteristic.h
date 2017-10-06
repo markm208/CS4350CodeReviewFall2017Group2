@@ -41,11 +41,8 @@ int charsBeforeDecimal(char numString[])
 	//this will help count the characters before decimal point
 	int counter = 0;
 
-	//get rid of it, doesn't do anything================================
-	char sign = '+';
-
 	//checking if the array is valid
-	for (int i = 0; i < numString[i] != 0; i++)
+	for (int i = 0; i < numString[i] != '/0'; i++)
 	{
 		//if it reaches the decimal point, break
 		if (numString[i] == '.')
@@ -56,8 +53,6 @@ int charsBeforeDecimal(char numString[])
 
 		else if (numString[i] == '-' || numString[i] == '+')
 		{
-			//if it is negative then set sign equal to it
-			sign = numString[i];
 			counter++;
 		}
 
@@ -80,7 +75,6 @@ int charsBeforeDecimal(char numString[])
 		//it's a number
 		else
 		{
-			//convert here maybe??
 			counter++;
 		}
 	}
@@ -101,13 +95,13 @@ void convertToInt(char numString[], int numOfChar, int& c)
 
 	//Boolean variable used to check if there is
 	//a sign before the number, if so multiply by -1
-	bool isThereASign = false;
-
+	bool isThereANegativeSign = false;
+	bool isThereAPositiveSign = false;
 	//Used this number for 10^num
 	numOfChar -= 1;
 
-	//is there a sign before the number
-	if (numString[0] == '-' || numString[0] == '+')
+	//is there a negative sign before the number
+	if (numString[0] == '-')
 	{
 		//If there is a sign that means that we 
 		//have one less number
@@ -118,7 +112,21 @@ void convertToInt(char numString[], int numOfChar, int& c)
 		i = 1;
 
 		//This is true now
-		isThereASign = true;
+		isThereANegativeSign = true;
+	}
+
+	//is there a positive sign
+	else if(numString[0] == '+')
+	{
+		//If there is a sign that means that we 
+		//have one less number
+		numOfChar -= 1;
+
+		//And that also means that we are going to start at 1
+		//ex: +123
+		i = 1;
+
+		isThereAPositiveSign = true;
 	}
 
 	//starting value
@@ -189,17 +197,13 @@ void convertToInt(char numString[], int numOfChar, int& c)
 
 	//if there is - before the number
 	//then we multiply our final number with -1
-	if (isThereASign)
+	if (isThereANegativeSign)
 	{
 		c = c*(-1);
 	}
 
+	else if (isThereAPositiveSign)
+	{
+		c = c*(+1);
+	}
 }
-
-//GENERAL COMMENTS AND ISSUES
-//get rid of it, doesn't do anything================================
-//char sign = '+';
-
-//you are not checking if string is equal, not checking for letters
-
-//line 47 should be /0 not 0
