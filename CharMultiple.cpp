@@ -1,8 +1,5 @@
-// CharMultiple.cpp : Defines the entry point for the console application.
-//
-
+//Eddie Miklasz
 #include "stdafx.h"
-
 #include <iostream>
 using namespace std;
 
@@ -13,6 +10,7 @@ int stripNegative(int num);
 
 int main()
 {
+	
 	char *numArray = new char[100];
 
 	int c1 = 2;
@@ -29,10 +27,11 @@ int main()
 
 	for (int i = 0; numArray[i] != '\0'; i++)
 	{
-		cout << numArray[i] << " ";
+	cout << numArray[i] << " ";
 	}
 
 	cout << endl;
+	
 
 	system("pause");
 }
@@ -68,12 +67,26 @@ bool multiply(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int
 	c2 = c2 + n2;
 
 	//multiply with no floating points
-	int product = c1 * c2;
+	//overflow checking
+	unsigned long c1_test = c1;
+	unsigned long c2_test = c2;
+	unsigned long c_test = 0;
+	c_test = c2_test * c1_test;
+	int product = 0;
+	if (c_test / c1_test != c2_test) 
+	{ 
+		cout << "There was an overflow" << endl;
 
-	//get where the decimal point is supposed to be placed 
+	}
+	else
+	{
+		product = c_test;
+	}
+	//get where the decimal point is supposed to be placed
+	//this assumes where that the denominator is a fraction like 10, 100, 1000, ect
 	int decimalLength = (sizeOfInt(d1) - 1) + (sizeOfInt(d2) - 1);
 
-	bool retVal = numberToArray(result, product, decimalLength, len, isPositive);
+	retVal = numberToArray(result, product, decimalLength, len, isPositive);
 
 	return retVal;
 }
