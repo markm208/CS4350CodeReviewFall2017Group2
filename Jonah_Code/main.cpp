@@ -16,7 +16,8 @@ int numDigits(int number);
 void calculate_fraction(int n1, int d1, int n2, int d2, int& final_n);
 void calculate_fraction_overflow(int&c, int& n, int& d);
 int add_character_to_array(int return_number, char result[], int len);
-int add_mantissa_to_array(float decimal_value, char result[], int len, int index);
+int add_mantissa_to_array(int n, int d, char result[], int len, int index);
+char* convert_mantissa_to_char(int return_denominator, int return_numerator, int space);
 
 int main() {
     char returnValue[15] = "";
@@ -34,11 +35,10 @@ int main() {
 }
 
 bool add(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len) {
-    bool retVal = false;
     
     //denominators cannot be less than or equal to 0
     if(d1 <= 0 || d2 <= 0) {
-        return retVal;
+        return false;
     }
     
     //numerator should be negative if c is negative
@@ -52,7 +52,7 @@ bool add(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len)
     
     //numerator should not be negative if c is positive
     if((c1 > 0 && n1 < 0) || (c2 > 0 && n2 < 0)){
-        return retVal;
+        return false;
     }
     
     //return_number is just the two characteristics added together
@@ -72,11 +72,14 @@ bool add(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len)
         calculate_fraction_overflow(return_number, return_numerator, return_denominator);
     }
     
+    //flip the sign if the numerator is false
+    if(return_numerator < 0){
+        return_number--;
+        return_numerator = return_numerator + return_denominator;
+    }
     //character is longer than the length of the passed in buffer + 1 (to account for ending \0)
-    if(len+1 < numDigits(return_number)){
-        return retVal;
-    } else {
-        retVal = true;
+    if(len-1 < numDigits(return_number)){
+        return false;
     }
     
     //puts the character into the results buffer
@@ -85,13 +88,12 @@ bool add(int c1, int n1, int d1, int c2, int n2, int d2, char result[], int len)
         result[index] = '.';
         index++;
         
-        //calculates the decimal
-        float decimal = (float)return_numerator / (float)return_denominator;
+       
         //puts the mantissa into the results buffer
-        index = add_mantissa_to_array(decimal, result, len, index);
+        index = add_mantissa_to_array(return_numerator, return_denominator, result, len, index);
     }
     cout << result << endl;
-    return retVal;
+    return true;
 }
 
 int find_temp_denominator(int d1, int d2) {
@@ -109,11 +111,6 @@ void calculate_fraction(int n1, int d1, int n2, int d2, int& final_n){
     // Using cross multiplication to get a common base unit for both fractions
     final_n = ((n1 * d2) + (n2 * d1));
     
-    // we need the number to be positive in order to properly translate to characters.
-    // The characteristic will determine if the number is positive/negative
-    if(final_n < 0){
-        final_n = final_n * -1;
-    }
 }
 
 void calculate_fraction_overflow(int&c, int& n, int& d){
@@ -168,10 +165,13 @@ int add_character_to_array(int return_number, char result[], int len){
     return index;
 }
 
-int add_mantissa_to_array(float decimal_value, char result[], int len, int index){
+int add_mantissa_to_array(int n, int d, char result[], int len, int index){
     
     //how much space is left
     int space = len - index;
+    
+    //calculates the decimal
+    char* decimal = convert_mantissa_to_char(n, d, space);
     
     //unsigned is an attempt to avoid overflow (not perfect)
     unsigned int offset = 1;
@@ -179,22 +179,23 @@ int add_mantissa_to_array(float decimal_value, char result[], int len, int index
         offset = offset * 10;
     }
     
-    //converts decimal to a whole number that's characteristic is the same length as the remaining space in the result
-    int return_number = decimal_value * offset;
-    char temp_array[space];
-    int temp_index = 0;
-    while(temp_index < space){
-        int temp = return_number % 10;
-        temp_array[temp_index] = 48 + temp;
-        return_number = return_number / 10;
-        
-        temp_index++;
-    }
-    
-    for(int i = temp_index-1; i > 0; i--) {
-        result[index] = temp_array[i];
+
+    for(int temp_index = 0; temp_index < space; temp_index++){
+        result[index] = decimal[temp_index];
         index++;
     }
-    result[len-1] = '\0';
     return index;
+}
+
+
+char* convert_mantissa_to_char(int return_denominator, int return_numerator, int space) {
+    char * decimal_nums = (char*)malloc(space);
+    for(int i = 0; i < space; i++){
+        if(return_numerator != 0){
+            int temp = (return_numerator* 10) / return_denominator;
+            decimal_nums[i] = temp + '0';
+            return_numerator  = (return_numerator* 10) % return_denominator;
+        }
+    }
+    return decimal_nums;
 }
